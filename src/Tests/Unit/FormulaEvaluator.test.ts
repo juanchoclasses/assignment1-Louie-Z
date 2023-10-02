@@ -312,7 +312,7 @@ describe("FormulaEvaluator", () => {
 
     describe("when the formula is 1 * ) ", () => {
       it("returns the number", () => {
-        const formula = ["1", "+", "+"];
+        const formula = ["1", "*", ")"];
 
         recalc.evaluate(formula);
 
