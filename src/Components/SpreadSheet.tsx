@@ -6,6 +6,7 @@ import SpreadSheetClient from "../Engine/SpreadSheetClient";
 import SheetHolder from "./SheetHolder";
 
 import { ButtonNames } from "../Engine/GlobalDefinitions";
+import { addListener } from "process";
 
 
 interface SpreadSheetProps {
@@ -70,6 +71,17 @@ function SpreadSheet({ documentName }: SpreadSheetProps) {
   }
 
   /**
+   * This function is called to check if the user name is empty
+   */
+  function isEmptyUsername(): boolean {
+    if (!userName){
+      alert("User name cannot be empty, please enter a user name"); 
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * 
    * @param event 
    * 
@@ -82,7 +94,10 @@ function SpreadSheet({ documentName }: SpreadSheetProps) {
    * the other buttons do require asynchronous processing and so the function is marked async
    */
   async function onCommandButtonClick(text: string): Promise<void> {
-
+    // if the user name is empty then do not allow any commands
+    if (isEmptyUsername()) {
+      return;
+    }
 
     switch (text) {
       case ButtonNames.edit_toggle:
@@ -116,6 +131,10 @@ function SpreadSheet({ documentName }: SpreadSheetProps) {
    * 
    * */
   function onButtonClick(event: React.MouseEvent<HTMLButtonElement>): void {
+    // if the user name is empty then do not allow any commands
+    if (isEmptyUsername()) {
+      return;
+    }
 
     const text = event.currentTarget.textContent;
     let trueText = text ? text : "";
@@ -136,6 +155,10 @@ function SpreadSheet({ documentName }: SpreadSheetProps) {
    * If the edit status is false then it will ask the machine to update the current formula.
    */
   function onCellClick(event: React.MouseEvent<HTMLButtonElement>): void {
+    // if the user name is empty then do not allow any commands
+    if (isEmptyUsername()) {
+      return;
+    }
 
     const cellLabel = event.currentTarget.getAttribute("cell-label");
     // calculate the current row and column of the clicked on cell
