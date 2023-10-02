@@ -209,6 +209,16 @@ class SpreadSheetClient {
 
 
     public addToken(token: string): void {
+        // if (token === '/') {
+        //     token = '%2F';
+        // }
+
+        if (token === '.') {
+            token = 'D';
+        } else {
+            token = encodeURIComponent(token);
+        }
+
         const requestAddTokenURL = `${this._baseURL}/document/addtoken/${this._documentName}/${token}`;
         fetch(requestAddTokenURL, {
             method: 'PUT',

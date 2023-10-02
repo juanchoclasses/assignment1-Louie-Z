@@ -31,6 +31,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { DocumentHolder } from '../Engine/DocumentHolder';
 import { PortsGlobal } from '../PortsGlobal';
+import { decode } from 'punycode';
 
 // define a debug flag to turn on debugging
 let debug = true;
@@ -176,7 +177,15 @@ app.put('/document/cell/view/:name/:cell', (req: express.Request, res: express.R
 
 app.put('/document/addtoken/:name/:token', (req: express.Request, res: express.Response) => {
     const name = req.params.name;
-    const token = req.params.token;
+    //const token = req.params.token;
+    let token = req.params.token;
+    if (token === 'D') {
+        token = '.';
+    } else {
+        token = decodeURIComponent(token);
+    }
+
+
     // is this name valid?
     const documentNames = documentHolder.getDocumentNames();
     if (documentNames.indexOf(name) === -1) {
