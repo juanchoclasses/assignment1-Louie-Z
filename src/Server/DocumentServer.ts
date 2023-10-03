@@ -31,7 +31,6 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { DocumentHolder } from '../Engine/DocumentHolder';
 import { PortsGlobal } from '../PortsGlobal';
-import { decode } from 'punycode';
 
 // define a debug flag to turn on debugging
 let debug = true;
@@ -187,6 +186,8 @@ app.put('/document/addtoken/:name/:token', (req: express.Request, res: express.R
     if (token === 'period') {
         token = '.';
     }
+
+    // const token = req.params.token;
 
 
     // is this name valid?

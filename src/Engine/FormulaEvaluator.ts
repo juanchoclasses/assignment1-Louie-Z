@@ -1,18 +1,16 @@
-import Cell from "./Cell"
-import SheetMemory from "./SheetMemory"
+import Cell from "./Cell";
+import SheetMemory from "./SheetMemory";
 import { ErrorMessages } from "./GlobalDefinitions";
-
-
 
 export class FormulaEvaluator {
   // Define a function called update that takes a string parameter and returns a number
-  private _errorOccured: boolean = false;
+  // Class member variables
+  private _errorOcnxted: boolean = false;
   private _errorMessage: string = "";
-  private _currentFormula: FormulaType = [];
+  private _nxtrentFormula: FormulaType = [];
   private _lastResult: number = 0;
   private _sheetMemory: SheetMemory;
   private _result: number = 0;
-
 
   constructor(memory: SheetMemory) {
     this._sheetMemory = memory;
@@ -44,58 +42,123 @@ export class FormulaEvaluator {
    */
 
   evaluate(formula: FormulaType) {
-
-
-    // set the this._result to the length of the formula
-
-    this._result = formula.length;
+    // Initialize the evaluation
     this._errorMessage = "";
+    this._result = 0;
+    
 
-    switch (formula.length) {
-      case 0:
-        this._errorMessage = ErrorMessages.emptyFormula;
-        break;
-      case 7:
-        this._errorMessage = ErrorMessages.partial;
-        break;
-      case 8:
-        this._errorMessage = ErrorMessages.divideByZero;
-        break;
-      case 9:
-        this._errorMessage = ErrorMessages.invalidCell;
-        break;
-      case 10:
-        this._errorMessage = ErrorMessages.invalidFormula;
-        break;
-      case 11:
-        this._errorMessage = ErrorMessages.invalidNumber;
-        break;
-      case 12:
-        this._errorMessage = ErrorMessages.invalidOperator;
-        break;
-      case 13:
-        this._errorMessage = ErrorMessages.missingParentheses;
-        break;
-      default:
-        this._errorMessage = "";
-        break;
+    const operators: TokenType[] = [];
+    const outputQueue: TokenType[] = [];
+    const operands: number[] = [];
+    const formulaElementArray: string[] = [...formula];
+    const pemdas: { [key: string]: number } = {
+      "+": 1,
+      "-": 1,
+      "*": 2,
+      "/": 2,
+    };
+  
+    // Check for empty parentheses
+    if (formula.length === 2 && formula[0] === "(" && formula[1] === ")") {
+      this._errorMessage = ErrorMessages.missingParentheses;
+      this._result = 0;
+      return;
     }
+  
+    // Check for empty formula
+    if (formula.filter(token => token !== "(" && token !== ")" && token !== " ").length === 0){
+      this._errorMessage = ErrorMessages.emptyFormula;
+      return;
+    }
+  
+    // Get cell values
+    formula.forEach((token, i) => {
+      if (this.isCellReference(token)) {
+        const [value, error] = this.getCellValue(token);
+        this._errorMessage = error;
+        formulaElementArray[i] = String(value);
+      }
+    });
+    if (this._errorMessage !== "") return;
+
+  
+    for (const token of formulaElementArray) {
+      if (this.isNumber(token)) {
+        outputQueue.push(token);
+      } else if (token === "(") {
+        operators.push(token);
+      } else if (token === ")") {
+        while (operators.length && operators[operators.length - 1] !== "(") {
+          outputQueue.push(operators.pop()!);
+        }
+        operators.pop();
+      } else {
+        while (operators.length && pemdas[token] <= pemdas[operators[operators.length - 1]]) {
+          outputQueue.push(operators.pop()!);
+        }
+        operators.push(token);
+      }
+    }
+  
+    while (operators.length) {
+      outputQueue.push(operators.pop()!);
+    }
+    if (outputQueue.length === 1 && this.isNumber(outputQueue[0])) {
+      this._result = Number(outputQueue[0]);
+      return;
+    }
+    
+    // Evaluate postfix expression
+    for (const token of outputQueue) {
+      if (this.isNumber(token)) {
+        operands.push(Number(token));
+      } else {
+        if (operands.length < 2) {
+          this._errorMessage = ErrorMessages.invalidFormula;
+          break;
+        }
+        const nxt = operands.pop();
+        const pre= operands.pop();
+        if (nxt === undefined || pre=== undefined) {
+          this._errorMessage = ErrorMessages.invalidFormula;
+          break;
+        }
+        switch (token) {
+          case "+":
+            operands.push(pre+ nxt);
+            break;
+          case "-":
+            operands.push(pre- nxt);
+            break;
+          case "*":
+            operands.push(pre* nxt);
+            break;
+          case "/":
+            if (nxt === 0) {
+              this._errorMessage = ErrorMessages.divideByZero;
+              this._result = Infinity;
+              return;
+            } else {
+              operands.push(pre/ nxt);
+            }
+            break;
+        }
+      }
+    }
+    this._result = operands[0];
   }
 
   public get error(): string {
-    return this._errorMessage
+    return this._errorMessage;
   }
 
   public get result(): number {
     return this._result;
   }
 
-
-
-
   /**
-   * 
-   * @param token 
+   *
+   * @param token
    * @returns true if the toke can be parsed to a number
    */
   isNumber(token: TokenType): boolean {
@@ -103,26 +166,24 @@ export class FormulaEvaluator {
   }
 
   /**
-   * 
+   *
    * @param token
    * @returns true if the token is a cell reference
-   * 
+   *
    */
   isCellReference(token: TokenType): boolean {
-
     return Cell.isValidCellLabel(token);
   }
 
   /**
-   * 
+   *
    * @param token
    * @returns [value, ""] if the cell formula is not empty and has no error
    * @returns [0, error] if the cell has an error
    * @returns [0, ErrorMessages.invalidCell] if the cell formula is empty
-   * 
+   *
    */
   getCellValue(token: TokenType): [number, string] {
-
     let cell = this._sheetMemory.getCellByLabel(token);
     let formula = cell.getFormula();
     let error = cell.getError();
@@ -137,13 +198,9 @@ export class FormulaEvaluator {
       return [0, ErrorMessages.invalidCell];
     }
 
-
     let value = cell.getValue();
     return [value, ""];
-
   }
-
-
 }
 
 export default FormulaEvaluator;
