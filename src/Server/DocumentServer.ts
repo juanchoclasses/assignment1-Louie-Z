@@ -179,10 +179,13 @@ app.put('/document/addtoken/:name/:token', (req: express.Request, res: express.R
     const name = req.params.name;
     //const token = req.params.token;
     let token = req.params.token;
-    if (token === 'D') {
+    // if (token === 'D') {
+    //     token = '.';
+    // } else {
+    //     token = decodeURIComponent(token);
+    // }
+    if (token === 'period') {
         token = '.';
-    } else {
-        token = decodeURIComponent(token);
     }
 
 
