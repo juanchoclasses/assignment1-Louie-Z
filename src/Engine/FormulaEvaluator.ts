@@ -41,14 +41,21 @@ export class FormulaEvaluator {
     * 
    */
 
+  /**
+   * 
+   * @param formula 
+   * @returns 
+   * 
+   * this is the function that will be called from the front end to evaluate the formula
+   */
   evaluate(formula: FormulaType) {
     // Initialize the evaluation
     this._errorMessage = "";
     this._result = 0;
-    
 
+    // consts for the evaluation
     const operators: TokenType[] = [];
-    const outputQueue: TokenType[] = [];
+    const results: TokenType[] = [];
     const operands: number[] = [];
     const formulaElementArray: string[] = [...formula];
     const pemdas: { [key: string]: number } = {
@@ -57,20 +64,23 @@ export class FormulaEvaluator {
       "*": 2,
       "/": 2,
     };
-  
+
     // Check for empty parentheses
     if (formula.length === 2 && formula[0] === "(" && formula[1] === ")") {
       this._errorMessage = ErrorMessages.missingParentheses;
       this._result = 0;
       return;
     }
-  
+
     // Check for empty formula
-    if (formula.filter(token => token !== "(" && token !== ")" && token !== " ").length === 0){
+    if (
+      formula.filter((token) => token !== "(" && token !== ")" && token !== " ")
+        .length === 0
+    ) {
       this._errorMessage = ErrorMessages.emptyFormula;
       return;
     }
-  
+
     // Get cell values
     formula.forEach((token, i) => {
       if (this.isCellReference(token)) {
@@ -79,59 +89,67 @@ export class FormulaEvaluator {
         formulaElementArray[i] = String(value);
       }
     });
+
+    // Check for invalid formula
     if (this._errorMessage !== "") return;
 
-  
+    // Convert infix to postfix
     for (const token of formulaElementArray) {
       if (this.isNumber(token)) {
-        outputQueue.push(token);
+        results.push(token);
       } else if (token === "(") {
         operators.push(token);
       } else if (token === ")") {
         while (operators.length && operators[operators.length - 1] !== "(") {
-          outputQueue.push(operators.pop()!);
+          results.push(operators.pop()!);
         }
         operators.pop();
       } else {
-        while (operators.length && pemdas[token] <= pemdas[operators[operators.length - 1]]) {
-          outputQueue.push(operators.pop()!);
+        while (
+          operators.length &&
+          pemdas[token] <= pemdas[operators[operators.length - 1]]
+        ) {
+          results.push(operators.pop()!);
         }
         operators.push(token);
       }
     }
-  
+
+    // Push remaining operators to output queue
     while (operators.length) {
-      outputQueue.push(operators.pop()!);
+      results.push(operators.pop()!);
     }
-    if (outputQueue.length === 1 && this.isNumber(outputQueue[0])) {
-      this._result = Number(outputQueue[0]);
+    if (results.length === 1 && this.isNumber(results[0])) {
+      this._result = Number(results[0]);
       return;
     }
-    
+
     // Evaluate postfix expression
-    for (const token of outputQueue) {
+    for (const token of results) {
       if (this.isNumber(token)) {
         operands.push(Number(token));
       } else {
+        // Check for insufficient operands
         if (operands.length < 2) {
           this._errorMessage = ErrorMessages.invalidFormula;
           break;
         }
         const nxt = operands.pop();
-        const pre= operands.pop();
-        if (nxt === undefined || pre=== undefined) {
+        const pre = operands.pop();
+        if (nxt === undefined || pre === undefined) {
           this._errorMessage = ErrorMessages.invalidFormula;
           break;
         }
+        // calculate the result
         switch (token) {
           case "+":
-            operands.push(pre+ nxt);
+            operands.push(pre + nxt);
             break;
           case "-":
-            operands.push(pre- nxt);
+            operands.push(pre - nxt);
             break;
           case "*":
-            operands.push(pre* nxt);
+            operands.push(pre * nxt);
             break;
           case "/":
             if (nxt === 0) {
@@ -139,12 +157,14 @@ export class FormulaEvaluator {
               this._result = Infinity;
               return;
             } else {
-              operands.push(pre/ nxt);
+              operands.push(pre / nxt);
             }
             break;
         }
       }
     }
+
+    // the first number in the operands array is the result
     this._result = operands[0];
   }
 
